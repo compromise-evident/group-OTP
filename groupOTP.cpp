@@ -48,10 +48,8 @@ int main()
 	
 	//______________________________________________________Get_keys__________________________________________________//
 	if(user_option == 1)
-	{	//Checks if keys already exist.
-		in_stream.open("keys");
-		if(!in_stream.fail()) {cout << "\n\"keys\" folder already exists.\n"; in_stream.close(); return 0;}
-		in_stream.close();
+	{	//Exits if keys already exist.
+		in_stream.open("keys"); if(!in_stream.fail()) {cout << "\n\"keys\" folder already exists.\n"; in_stream.close(); return 0;} in_stream.close();
 		
 		//Gets number of users.
 		long long users = 0; cout << "Enter number of users (2 to 10^18): "; cin >> users;
