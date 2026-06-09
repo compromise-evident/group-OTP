@@ -209,7 +209,7 @@ int main()
 		key_file_name += user_number;
 		
 		//Loads key.
-		char seeds[50001] = {'\0'}; cout << "Encrypting...\n";
+		char seeds[50001] = {'\0'}; cout << "Decrypting...\n";
 		long long size = filesystem::file_size(key_file_name); if(size != digit_length) {cout << "\nBad key.\n"; return 1;}          //Checks file size.
 		in_stream.open(key_file_name); for(int a = 0; a < digit_length; a++) {in_stream.get(seeds[a]);} in_stream.close();           //Loads value.
 		if(seeds[0] == '0') {seeds[0] = '5';}                                                                                        //Forces its length.
