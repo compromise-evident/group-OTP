@@ -34,7 +34,7 @@ Option: |
 
 
 Send in the order encrypted, and decrypt in the order received! Keys are files
-that contain rolling-seeds, which are used to generate random bytes 0-255.
+that contain rolling-seeds, which are used to generate pseudorandom bytes 0-255.
 ```
 
 <br>
