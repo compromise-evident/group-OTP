@@ -21,18 +21,21 @@ Option: |
 
 ```text
 
-             you make 5 keys:     1       2       3       4       5
-          user 2 gets copies:     1       2       3       4       5
-          user 3 gets copies:     1       2       3       4       5
-          user 4 gets copies:     1       2       3       4       5
-          user 5 gets copies:     1       2       3       4       5
+      you make 5 keys:     1       2       3       4       5
+   user 2 gets copies:     1       2       3       4       5
+   user 3 gets copies:     1       2       3       4       5
+   user 4 gets copies:     1       2       3       4       5
+   user 5 gets copies:     1       2       3       4       5
 
 
-                                  ^                               ^
-                             with which                      with which
-                          you encrypt, and                user 5 encrypts,
-                           others decrypt                and others decrypt
+                           ^                               ^
+                      with which                      with which
+                   you encrypt, and                user 5 encrypts,
+                    others decrypt                and others decrypt
 
+
+Send in the order encrypted, and decrypt in the order received! Keys are files
+that contain rolling-seeds, which are used to generate random bytes 0-255.
 ```
 
 <br>
