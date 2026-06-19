@@ -3,6 +3,8 @@
 ```apt install g++ geany libgmp-dev```. Open the .cpp in Geany.<br>
 Append ```-lgmp``` to Geany's compile & build commands. Hit F9 once. F5 to run.
 
+<br>
+
 ```text
 (1) Get keys
 (2) Encrypt outgoing file
