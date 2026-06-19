@@ -20,7 +20,6 @@ Option: |
 ### How it works
 
 ```text
-
       you make 5 keys:     1       2       3       4       5
    user 2 gets copies:     1       2       3       4       5
    user 3 gets copies:     1       2       3       4       5
