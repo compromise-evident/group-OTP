@@ -1,14 +1,39 @@
-Run it: ```apt install g++ geany libgmp-dev```. Open the .cpp in Geany.<br>
+### Run it
+
+```apt install g++ geany libgmp-dev```. Open the .cpp in Geany.<br>
 Append ```-lgmp``` to Geany's compile & build commands. Hit F9 once. F5 to run.
 
-<p align="center">
-  <img src="docs/terminal.png">
-</p>
+```text
+(1) Get keys
+(2) Encrypt outgoing file
+(3) Decrypt received file
+
+Option: |
+```
 
 <br>
+
+### How it works
+
+```text
+
+             you make 5 keys:     1       2       3       4       5
+          user 2 gets copies:     1       2       3       4       5
+          user 3 gets copies:     1       2       3       4       5
+          user 4 gets copies:     1       2       3       4       5
+          user 5 gets copies:     1       2       3       4       5
+
+
+                                  ^                               ^
+                             with which                      with which
+                          you encrypt, and                user 5 encrypts,
+                           others decrypt                and others decrypt
+
+```
+
 <br>
 
-# Perfect secrecy proof
+### Perfect secrecy proof
 
 <p align="center">
   <img src="docs/perfect_secrecy_proof.png">
@@ -17,16 +42,14 @@ Append ```-lgmp``` to Geany's compile & build commands. Hit F9 once. F5 to run.
 <sup>Original discoverer of the One-time pad (perfect secrecy) is not mentioned as I had independently rediscovered it ~December 2019</sup>
 
 <br>
-<br>
 
-# Security
+### Security
 
 * Uses my https://github.com/compromise-evident/rolling-code
 
 <br>
-<br>
 
-# Recommended setup for chatting securely
+### Recommended setup for chatting securely
 
 <p align="center">
   <img src="docs/secure_chat.png">
