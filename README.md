@@ -5,6 +5,8 @@ Append ```-lgmp``` to Geany's compile & build commands. Hit F9 once. F5 to run.
 
 <br>
 
+### Terminal
+
 ```text
 (1) Get keys
 (2) Encrypt outgoing file
