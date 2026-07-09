@@ -1,267 +1,194 @@
-//YOUR CONTROLS:                                                                Run it: "apt install g++ geany libgmp-dev". Open the .cpp in Geany.
-int digit_length = 200; //50000 max                                             //Append "-lgmp" to Geany's compile & build commands. Hit F9 once. F5 to run.
-//digit_length is the length of a (jumping) value, near which
-//prime gaps are found, for randomness. Bigger = more secure.
-
-
-
-/*Version 6.0.0
+/*Version 7.0.0                                                                 Run it: "apt install g++ geany". Open the .cpp in Geany. Hit F9 once. F5 to run.
 Secure One-time pad for unlimited file encryption between n people.
-No key is rejected upon decryption--giving false plausible output.
- ______________________________________________________________________________
-/                                                                              \
-|            you make 5 keys:     1       2       3       4       5            |
-|         user 2 gets copies:     1       2       3       4       5            |
-|         user 3 gets copies:     1       2       3       4       5            |
-|         user 4 gets copies:     1       2       3       4       5            |
-|         user 5 gets copies:     1       2       3       4       5            |
-|                                                                              |
-|                                                                              |
-|                                 ^                               ^            |
-|                            with which                      with which        |
-|                         you encrypt, and                user 5 encrypts,     |
-|                          others decrypt                and others decrypt    |
-\______________________________________________________________________________/
-
-Send in the order encrypted, and decrypt in the order received! Keys are files
-that contain rolling-seeds, which are used to generate pseudorandom bytes 0-255.*/
+No key is rejected upon decryption--giving false plausible output.*/
 
 #include <filesystem>
 #include <fstream>
-#include <gmp.h> //For primes
 #include <iostream>
-using namespace std;
+#include <string>
 int main()
-{	int raw_byte;
-	char file_byte;
-	ifstream in_stream;
-	ofstream out_stream;
+{	char file_byte;
+	std::string file_line;
+	std::ifstream in_stream;
+	std::ofstream out_stream;
 	
-	cout << "\n(1) Get keys"
-	     << "\n(2) Encrypt outgoing file"
-	     << "\n(3) Decrypt received file"
+	std::string SHA_512_input;
+	std::string SHA_512_output;
 	
-	     << "\n\nOption: ";
+	std::cout << "\n(1) Get keys"
+	          << "\n(2) Encrypt outgoing file"
+	          << "\n(3) Decrypt received file"
 	
-	int user_option; cin >> user_option;
-	if((user_option != 1) && (user_option != 2) && (user_option != 3)) {cout << "\nInvalid.\n"; return 0;}
+	          << "\n\nOption: ";
 	
-	//______________________________________________________Get_keys__________________________________________________//
-	if(user_option == 1)
+	std::string o; std::getline(std::cin, o); if((o != "1") && (o != "2") && (o != "3")) {std::cout << "\nBad option.\n"; return 0;}
+	
+	//Get keys.
+	//WZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMW
+	if(o == "1")
 	{	//Exits if keys already exist.
-		in_stream.open("keys"); if(!in_stream.fail()) {cout << "\n\"keys\" folder already exists.\n"; in_stream.close(); return 0;} in_stream.close();
+		if(std::filesystem::exists("keys")) {std::cout << "\nkeys already exist.\n"; return 0;}
 		
 		//Gets number of users.
-		long long users = 0; cout << "Enter number of users (2 to 10^18): "; cin >> users;
-		if((users < 2) || (users > 1000000000000000000)) {cout << "Out of bounds.\n\n"; return 0;}
+		std::cout << "\nEnter number of users (2 to 10^18): "; std::string n; std::getline(std::cin, n);
+		unsigned long long users = std::stoull(n);
+		if((users < 2) || (users > 1000000000000000000)) {std::cout << "\nOut of bounds.\n"; return 0;}
 		
-		//Creates temporary seeds file.
-		{	//Gets path, fixes it if dropped.
-			cout << "Just once, drop/enter any file of " << digit_length << "+ random first bytes:\n";
-			string path; getline(cin, path); if(path[0] == '\0') {getline(cin, path);}
-			if(path[0] == '\'') {path.erase(0, 1); path.pop_back(); path.pop_back();}
-			in_stream.open(path); if(in_stream.fail()) {cout << "\nNo path " << path << "\n"; return 1;} in_stream.close();
+		//Generates n keys. From rolling-code.cpp.
+		{	//Gets path.
+			std::cout << "\nJust once, drop/enter any file, preferably one with many random bytes:\n";
+			std::string path; std::getline(std::cin, path); if(path[0] == '\'') {path.erase(0, 1); path.pop_back(); path.pop_back();}
+			if(!std::filesystem::exists(path)) {std::cout << "\nNo path " << path << "\n"; return 1;}
 			
-			//Checks file size.
-			long long size = filesystem::file_size(path);
-			if(size < digit_length) {cout << "\nFile too small.\n"; return 1;}
-			
-			//Copies bytes, writes them modified.
-			filesystem::create_directories("keys");
-			in_stream.open(path);
-			out_stream.open("private_seeds");
-			for(int a = 0; a < digit_length; a++)
-			{	in_stream.get(file_byte); raw_byte = file_byte;
-				if(raw_byte < 0) {raw_byte += 256;} out_stream.put((raw_byte % 10) + 48);
-			}
+			//Loads seed.
+			in_stream.open(path); if(!in_stream) {std::cout << "\nCan't open file for reading. (Loads seed).\n"; return 1;}
+			std::string seed = ""; for(; in_stream.get(file_byte);) {seed.push_back(file_byte);}
 			in_stream.close();
+			
+			//Generates pseudorandomness.
+			out_stream.open("keys"); if(!out_stream) {std::cout << "\nCan't open file for writing. (Generates pseudorandomness).\n"; return 1;}
+			SHA_512_input = seed;
+			for(unsigned long long a = 0; a < (users * 128); a++)
+			{	{std::string msg = SHA_512_input; unsigned long long H[8] = {0x6a09e667f3bcc908ULL, 0xbb67ae8584caa73bULL, 0x3c6ef372fe94f82bULL, 0xa54ff53a5f1d36f1ULL, 0x510e527fade682d1ULL, 0x9b05688c2b3e6c1fULL, 0x1f83d9abfb41bd6bULL, 0x5be0cd19137e2179ULL}; const unsigned long long K[80] = {0x428a2f98d728ae22ULL, 0x7137449123ef65cdULL, 0xb5c0fbcfec4d3b2fULL, 0xe9b5dba58189dbbcULL, 0x3956c25bf348b538ULL, 0x59f111f1b605d019ULL, 0x923f82a4af194f9bULL, 0xab1c5ed5da6d8118ULL, 0xd807aa98a3030242ULL, 0x12835b0145706fbeULL, 0x243185be4ee4b28cULL, 0x550c7dc3d5ffb4e2ULL, 0x72be5d74f27b896fULL, 0x80deb1fe3b1696b1ULL, 0x9bdc06a725c71235ULL, 0xc19bf174cf692694ULL, 0xe49b69c19ef14ad2ULL, 0xefbe4786384f25e3ULL, 0x0fc19dc68b8cd5b5ULL, 0x240ca1cc77ac9c65ULL, 0x2de92c6f592b0275ULL, 0x4a7484aa6ea6e483ULL, 0x5cb0a9dcbd41fbd4ULL, 0x76f988da831153b5ULL, 0x983e5152ee66dfabULL, 0xa831c66d2db43210ULL, 0xb00327c898fb213fULL, 0xbf597fc7beef0ee4ULL, 0xc6e00bf33da88fc2ULL, 0xd5a79147930aa725ULL, 0x06ca6351e003826fULL, 0x142929670a0e6e70ULL, 0x27b70a8546d22ffcULL, 0x2e1b21385c26c926ULL, 0x4d2c6dfc5ac42aedULL, 0x53380d139d95b3dfULL, 0x650a73548baf63deULL, 0x766a0abb3c77b2a8ULL, 0x81c2c92e47edaee6ULL, 0x92722c851482353bULL, 0xa2bfe8a14cf10364ULL, 0xa81a664bbc423001ULL, 0xc24b8b70d0f89791ULL, 0xc76c51a30654be30ULL, 0xd192e819d6ef5218ULL, 0xd69906245565a910ULL, 0xf40e35855771202aULL, 0x106aa07032bbd1b8ULL, 0x19a4c116b8d2d0c8ULL, 0x1e376c085141ab53ULL, 0x2748774cdf8eeb99ULL, 0x34b0bcb5e19b48a8ULL, 0x391c0cb3c5c95a63ULL, 0x4ed8aa4ae3418acbULL, 0x5b9cca4f7763e373ULL, 0x682e6ff3d6b2b8a3ULL, 0x748f82ee5defb2fcULL, 0x78a5636f43172f60ULL, 0x84c87814a1f0ab72ULL, 0x8cc702081a6439ecULL, 0x90befffa23631e28ULL, 0xa4506cebde82bde9ULL, 0xbef9a3f7b2c67915ULL, 0xc67178f2e372532bULL, 0xca273eceea26619cULL, 0xd186b8c721c0c207ULL, 0xeada7dd6cde0eb1eULL, 0xf57d4f7fee6ed178ULL, 0x06f067aa72176fbaULL, 0x0a637dc5a2c898a6ULL, 0x113f9804bef90daeULL, 0x1b710b35131c471bULL, 0x28db77f523047d84ULL, 0x32caab7b40c72493ULL, 0x3c9ebe0a15c9bebcULL, 0x431d67c49c100d4cULL, 0x4cc5d4becb3e42b6ULL, 0x597f299cfc657e2aULL, 0x5fcb6fab3ad6faecULL, 0x6c44198c4a475817ULL}; unsigned long long orig_len_bits = msg.length() * 8ULL; msg.push_back((char)0x80); for(; (msg.length() % 128) != 112;) {msg.push_back((char)0x00);} msg.append(8, (char)0x00); for(int a = 0; a < 8; a++) {msg.push_back((char)((orig_len_bits >> (56 - a * 8)) & 0xFF));} for(unsigned long long offset = 0; offset < msg.length(); offset += 128) {unsigned long long W[80]; for(int i = 0; i < 16; i++) {unsigned long long p = offset + (i * 8); W[i] = ((unsigned long long)(unsigned char)msg[p + 0] << 56) | ((unsigned long long)(unsigned char)msg[p + 1] << 48) | ((unsigned long long)(unsigned char)msg[p + 2] << 40) | ((unsigned long long)(unsigned char)msg[p + 3] << 32) | ((unsigned long long)(unsigned char)msg[p + 4] << 24) | ((unsigned long long)(unsigned char)msg[p + 5] << 16) | ((unsigned long long)(unsigned char)msg[p + 6] <<  8) | ((unsigned long long)(unsigned char)msg[p + 7]);} for(int i = 16; i < 80; i++) {unsigned long long x0 = W[i - 15]; unsigned long long s0 = ((x0 >> 1) | (x0 << 63)) ^ ((x0 >> 8) | (x0 << 56)) ^ (x0 >> 7); unsigned long long x1 = W[i - 2]; unsigned long long s1 = ((x1 >> 19) | (x1 << 45)) ^ ((x1 >> 61) | (x1 << 3)) ^ (x1 >> 6); W[i] = s1 + W[i - 7] + s0 + W[i - 16];} unsigned long long a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7]; for(int i = 0; i < 80; i++) {unsigned long long bs1 = ((e >> 14) | (e << 50)) ^ ((e >> 18) | (e << 46)) ^ ((e >> 41) | (e << 23)); unsigned long long ch  = (e & f) ^ (~e & g); unsigned long long T1  = h + bs1 + ch + K[i] + W[i]; unsigned long long bs0 = ((a >> 28) | (a << 36)) ^ ((a >> 34) | (a << 30)) ^ ((a >> 39) | (a << 25)); unsigned long long maj = (a & b) ^ (a & c) ^ (b & c); unsigned long long T2  = bs0 + maj; h = g; g = f; f = e; e = d + T1; d = c; c = b; b = a; a = T1 + T2;} H[0] += a; H[1] += b; H[2] += c; H[3] += d; H[4] += e; H[5] += f; H[6] += g; H[7] += h;} SHA_512_output = ""; const char symbols[] = "0123456789abcdef"; for(int a = 0; a < 8; a++) {for(int b = 15; b >= 0; b--) {int nibble = (H[a] >> (b * 4)) & 0xF; SHA_512_output += symbols[nibble];}}}
+				unsigned long long pseudorandom_byte = std::stoull(SHA_512_output.substr(0, 16), 0, 16);
+				out_stream.put((pseudorandom_byte % 94) + 33); if((a + 1) % 128 == 0) {out_stream << "\n";}
+				SHA_512_input = SHA_512_output;
+			}
 			out_stream.close();
 		}
 		
-		//Loads seeds.
-		char seeds[50001] = {'\0'}; cout << "Creating keys...\n";
-		long long size = filesystem::file_size("private_seeds"); if(size != digit_length) {cout << "\nBad private_seeds.\n"; return 1;} //Checks file size.
-		in_stream.open("private_seeds"); for(int a = 0; a < digit_length; a++) {in_stream.get(seeds[a]);} in_stream.close();            //Loads value.
-		if(seeds[0] == '0') {seeds[0] = '5';}                                                                                           //Forces its length.
-		mpz_t in, out; mpz_init(in); mpz_init(out); mpz_set_str(in, seeds, 10); mpz_nextprime(out, in); mpz_get_str(seeds, 10, out);    //Makes it prime.
-		mpz_t prime, two; mpz_init(prime); mpz_init(two); mpz_set_str(prime, seeds, 10); mpz_set_ui(two, 2);                            //Dedicates.
+		std::cout << "\nDone! Either share the keys file in person, or"
+		          << "\nthey can get the same keys using the same file.\n";
 		
-		//Generates n keys (randomness). Each key is a value of length digit_length.
-		for(long long a = 0; a < users; a++)
-		{	//Generates randomness (by concatenating consecutive prime gaps).
-			string key; unsigned long long wanted_length = digit_length;
-			for(long long gap = 2; key.length() < wanted_length;)
-			{	mpz_add(prime, prime, two);
-				int primality = mpz_probab_prime_p(prime, 25);
-				if(primality == false) {gap += 2;}
-				else {key += to_string(gap); gap = 2;}
-			}
-			key.resize(digit_length);
-			
-			//Writes to a new key file.
-			string file_name = "keys/"; file_name += to_string(a + 1);
-			out_stream.open(file_name); out_stream << key; out_stream.close();
-		}
-		
-		//Removes file "private_seeds".
-		filesystem::remove_all("private_seeds");
-		
-		cout << "\nDone! Either share the keys folder in person,"
-		     << "\nor they can get the same keys using the same"
-		     << "\nfile of " << digit_length << "+ random first bytes.\n";
-		
-		if(users == 2) {cout << "\nYou are user 1. The other party must be user 2."                                                                   ;}
-		else           {cout << "\nYou are user 1. The Other parties must be assigned \na unique user number between 2 and " << users << " incluseve.";}
+		if(users == 2) {std::cout << "\nYou are user 1. The other party must be user 2."                                                                   ;}
+		else           {std::cout << "\nYou are user 1. The Other parties must be assigned \na unique user number between 2 and " << users << " incluseve.";}
 	}
 	
-	//______________________________________________________Encrypt___________________________________________________//
-	if(user_option == 2)
+	//Encrypt.
+	//WZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMW
+	if(o == "2")
 	{	//Exits if keys not present.
-		in_stream.open("keys"); if(in_stream.fail()) {cout << "\nGet keys first.\n"; return 0;} in_stream.close();
+		if(!std::filesystem::exists("keys")) {std::cout << "\nGet keys first.\n"; return 0;}
 		
-		//Creates file "user" if not present.
-		in_stream.open("user");
-		if(in_stream.fail())
-		{	long long num = 0; cout << "Just once, enter your user number: "; cin >> num;
-			out_stream.open("user"); out_stream << num; out_stream.close();
+		//Creates the user file if not present.
+		if(!std::filesystem::exists("user_number"))
+		{	std::cout << "\nJust once, enter your user number: "; std::string user_number; std::getline(std::cin, user_number);
+			out_stream.open("user_number"); if(!out_stream) {std::cout << "\nCan't open file for writing. (Creates the user file).\n"; return 1;}
+			out_stream << user_number;
+			out_stream.close();
+		}
+		
+		//Gets path.
+		std::cout << "\nDrop/enter file:\n";
+		std::string path; std::getline(std::cin, path); if(path[0] == '\'') {path.erase(0, 1); path.pop_back(); path.pop_back();}
+		if(!std::filesystem::exists(path)) {std::cout << "\nNo path " << path << "\n"; return 1;}
+		
+		//Checks file size.
+		if(std::filesystem::file_size(path) == 0) {std::cout << "\nEmpty file.\n"; return 0;}
+		
+		//Sees which key to use based on the user file.
+		in_stream.open("user_number"); if(!in_stream) {std::cout << "\nCan't open file for reading. (Sees which key to use).\n"; return 1;}
+		std::getline(in_stream, file_line);
+		unsigned long long user_number = std::stoull(file_line);
+		in_stream.close();
+		
+		//Loads key.
+		in_stream.open("keys"); if(!in_stream) {std::cout << "\nCan't open file for reading. (Loads key).\n"; return 1;}
+		std::string seed;
+		for(unsigned long long a = 1; std::getline(in_stream, seed); a++)
+		{	if(a == user_number) {break;}
 		}
 		in_stream.close();
 		
-		//Gets path, fixes it if dropped.
-		cout << "\nDrop/enter file:\n"; string path; getline(cin, path); if(path[0] == '\0') {getline(cin, path);}
-		if(path[0] == '\'') {path.erase(0, 1); path.pop_back(); path.pop_back();}
-		in_stream.open(path); if(in_stream.fail()) {cout << "\nNo path " << path << "\n"; return 1;} in_stream.close();
-		
-		//Gets file size.
-		long long input_file_size = filesystem::file_size(path);
-		if(input_file_size == 0) {cout << "\nEmpty file.\n"; return 0;}
-		
-		//Sees which key to use based on file "user".
-		string key_file_name = "keys/"; string user_number; in_stream.open("user"); getline(in_stream, user_number); in_stream.close();
-		key_file_name += user_number;
-		
-		//Loads key.
-		char seeds[50001] = {'\0'}; cout << "Encrypting...\n";
-		long long size = filesystem::file_size(key_file_name); if(size != digit_length) {cout << "\nBad key.\n"; return 1;}          //Checks file size.
-		in_stream.open(key_file_name); for(int a = 0; a < digit_length; a++) {in_stream.get(seeds[a]);} in_stream.close();           //Loads value.
-		if(seeds[0] == '0') {seeds[0] = '5';}                                                                                        //Forces its length.
-		mpz_t in, out; mpz_init(in); mpz_init(out); mpz_set_str(in, seeds, 10); mpz_nextprime(out, in); mpz_get_str(seeds, 10, out); //Makes it prime.
-		mpz_t prime, two; mpz_init(prime); mpz_init(two); mpz_set_str(prime, seeds, 10); mpz_set_ui(two, 2);                         //Dedicates.
-		
-		//Generates randomness.
-		in_stream.open(path);
-		out_stream.open(user_number);
-		for(long long gap = 2, a = 0; a < input_file_size;)
-		{	mpz_add(prime, prime, two);
-			int primality = mpz_probab_prime_p(prime, 25);
-			if(primality == false) {gap += 2;}
-			else
-			{	mpz_get_str(seeds, 10, prime);
-				gap *= 10; gap += seeds[digit_length - 3] - 48;
-				gap *= 10; gap += seeds[digit_length - 2] - 48; gap %= 256;
-				
-				//Reads a byte.
-				in_stream.get(file_byte); raw_byte = file_byte; if(raw_byte < 0) {raw_byte += 256;}
-				
-				//Encrypts byte.
-				raw_byte += gap; raw_byte %= 256;
-				
-				//Writes byte.
-				if(raw_byte < 128) {out_stream.put(raw_byte      );}
-				else               {out_stream.put(raw_byte - 256);}
-				
-				gap = 2; a++; cout << a << " of " << input_file_size << " bytes...\n";
-			}
+		//Generates pseudorandomness. From rolling-code.cpp.
+		in_stream.open(path);                         if( !in_stream) {std::cout << "\nCan't open file for reading. (Generates pseudorandomness).\n"; return 1;}
+		out_stream.open(std::to_string(user_number)); if(!out_stream) {std::cout << "\nCan't open file for writing. (Generates pseudorandomness).\n"; return 1;}
+		SHA_512_input = seed;
+		for(; in_stream.get(file_byte);)
+		{	{std::string msg = SHA_512_input; unsigned long long H[8] = {0x6a09e667f3bcc908ULL, 0xbb67ae8584caa73bULL, 0x3c6ef372fe94f82bULL, 0xa54ff53a5f1d36f1ULL, 0x510e527fade682d1ULL, 0x9b05688c2b3e6c1fULL, 0x1f83d9abfb41bd6bULL, 0x5be0cd19137e2179ULL}; const unsigned long long K[80] = {0x428a2f98d728ae22ULL, 0x7137449123ef65cdULL, 0xb5c0fbcfec4d3b2fULL, 0xe9b5dba58189dbbcULL, 0x3956c25bf348b538ULL, 0x59f111f1b605d019ULL, 0x923f82a4af194f9bULL, 0xab1c5ed5da6d8118ULL, 0xd807aa98a3030242ULL, 0x12835b0145706fbeULL, 0x243185be4ee4b28cULL, 0x550c7dc3d5ffb4e2ULL, 0x72be5d74f27b896fULL, 0x80deb1fe3b1696b1ULL, 0x9bdc06a725c71235ULL, 0xc19bf174cf692694ULL, 0xe49b69c19ef14ad2ULL, 0xefbe4786384f25e3ULL, 0x0fc19dc68b8cd5b5ULL, 0x240ca1cc77ac9c65ULL, 0x2de92c6f592b0275ULL, 0x4a7484aa6ea6e483ULL, 0x5cb0a9dcbd41fbd4ULL, 0x76f988da831153b5ULL, 0x983e5152ee66dfabULL, 0xa831c66d2db43210ULL, 0xb00327c898fb213fULL, 0xbf597fc7beef0ee4ULL, 0xc6e00bf33da88fc2ULL, 0xd5a79147930aa725ULL, 0x06ca6351e003826fULL, 0x142929670a0e6e70ULL, 0x27b70a8546d22ffcULL, 0x2e1b21385c26c926ULL, 0x4d2c6dfc5ac42aedULL, 0x53380d139d95b3dfULL, 0x650a73548baf63deULL, 0x766a0abb3c77b2a8ULL, 0x81c2c92e47edaee6ULL, 0x92722c851482353bULL, 0xa2bfe8a14cf10364ULL, 0xa81a664bbc423001ULL, 0xc24b8b70d0f89791ULL, 0xc76c51a30654be30ULL, 0xd192e819d6ef5218ULL, 0xd69906245565a910ULL, 0xf40e35855771202aULL, 0x106aa07032bbd1b8ULL, 0x19a4c116b8d2d0c8ULL, 0x1e376c085141ab53ULL, 0x2748774cdf8eeb99ULL, 0x34b0bcb5e19b48a8ULL, 0x391c0cb3c5c95a63ULL, 0x4ed8aa4ae3418acbULL, 0x5b9cca4f7763e373ULL, 0x682e6ff3d6b2b8a3ULL, 0x748f82ee5defb2fcULL, 0x78a5636f43172f60ULL, 0x84c87814a1f0ab72ULL, 0x8cc702081a6439ecULL, 0x90befffa23631e28ULL, 0xa4506cebde82bde9ULL, 0xbef9a3f7b2c67915ULL, 0xc67178f2e372532bULL, 0xca273eceea26619cULL, 0xd186b8c721c0c207ULL, 0xeada7dd6cde0eb1eULL, 0xf57d4f7fee6ed178ULL, 0x06f067aa72176fbaULL, 0x0a637dc5a2c898a6ULL, 0x113f9804bef90daeULL, 0x1b710b35131c471bULL, 0x28db77f523047d84ULL, 0x32caab7b40c72493ULL, 0x3c9ebe0a15c9bebcULL, 0x431d67c49c100d4cULL, 0x4cc5d4becb3e42b6ULL, 0x597f299cfc657e2aULL, 0x5fcb6fab3ad6faecULL, 0x6c44198c4a475817ULL}; unsigned long long orig_len_bits = msg.length() * 8ULL; msg.push_back((char)0x80); for(; (msg.length() % 128) != 112;) {msg.push_back((char)0x00);} msg.append(8, (char)0x00); for(int a = 0; a < 8; a++) {msg.push_back((char)((orig_len_bits >> (56 - a * 8)) & 0xFF));} for(unsigned long long offset = 0; offset < msg.length(); offset += 128) {unsigned long long W[80]; for(int i = 0; i < 16; i++) {unsigned long long p = offset + (i * 8); W[i] = ((unsigned long long)(unsigned char)msg[p + 0] << 56) | ((unsigned long long)(unsigned char)msg[p + 1] << 48) | ((unsigned long long)(unsigned char)msg[p + 2] << 40) | ((unsigned long long)(unsigned char)msg[p + 3] << 32) | ((unsigned long long)(unsigned char)msg[p + 4] << 24) | ((unsigned long long)(unsigned char)msg[p + 5] << 16) | ((unsigned long long)(unsigned char)msg[p + 6] <<  8) | ((unsigned long long)(unsigned char)msg[p + 7]);} for(int i = 16; i < 80; i++) {unsigned long long x0 = W[i - 15]; unsigned long long s0 = ((x0 >> 1) | (x0 << 63)) ^ ((x0 >> 8) | (x0 << 56)) ^ (x0 >> 7); unsigned long long x1 = W[i - 2]; unsigned long long s1 = ((x1 >> 19) | (x1 << 45)) ^ ((x1 >> 61) | (x1 << 3)) ^ (x1 >> 6); W[i] = s1 + W[i - 7] + s0 + W[i - 16];} unsigned long long a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7]; for(int i = 0; i < 80; i++) {unsigned long long bs1 = ((e >> 14) | (e << 50)) ^ ((e >> 18) | (e << 46)) ^ ((e >> 41) | (e << 23)); unsigned long long ch  = (e & f) ^ (~e & g); unsigned long long T1  = h + bs1 + ch + K[i] + W[i]; unsigned long long bs0 = ((a >> 28) | (a << 36)) ^ ((a >> 34) | (a << 30)) ^ ((a >> 39) | (a << 25)); unsigned long long maj = (a & b) ^ (a & c) ^ (b & c); unsigned long long T2  = bs0 + maj; h = g; g = f; f = e; e = d + T1; d = c; c = b; b = a; a = T1 + T2;} H[0] += a; H[1] += b; H[2] += c; H[3] += d; H[4] += e; H[5] += f; H[6] += g; H[7] += h;} SHA_512_output = ""; const char symbols[] = "0123456789abcdef"; for(int a = 0; a < 8; a++) {for(int b = 15; b >= 0; b--) {int nibble = (H[a] >> (b * 4)) & 0xF; SHA_512_output += symbols[nibble];}}}
+			unsigned long long pseudorandom_byte = std::stoull(SHA_512_output.substr(0, 16), 0, 16);
+			pseudorandom_byte %= 256; unsigned long long raw_byte = file_byte & 0xFF;
+			
+			//Encrypts byte.
+			out_stream.put((raw_byte + pseudorandom_byte) % 256);
+			
+			SHA_512_input = SHA_512_output;
 		}
 		in_stream.close();
 		out_stream.close();
 		
 		//Updates key file.
-		out_stream.open(key_file_name);
-		for(long long gap = 2, a = 0; a < digit_length;)
-		{	mpz_add(prime, prime, two);
-			int primality = mpz_probab_prime_p(prime, 25);
-			if(primality == false) {gap += 2;}
-			else {mpz_get_str(seeds, 10, prime); out_stream << seeds[digit_length - 2]; gap = 2; a++;}
+		in_stream.open ("keys"        ); if( !in_stream) {std::cout << "\nCan't open file for reading. (Updates key file).\n"; return 1;}
+		out_stream.open("updated_keys"); if(!out_stream) {std::cout << "\nCan't open file for writing. (Updates key file).\n"; return 1;}
+		for(unsigned long long a = 1; std::getline(in_stream, file_line); a++)
+		{	if(a == user_number) {out_stream << SHA_512_output << "\n";}
+			else                 {out_stream << file_line      << "\n";}
 		}
+		in_stream.close();
 		out_stream.close();
 		
-		cout << "\nEncrypted! Send file \"" << user_number << "\" to ALL other parties.\n";
+		std::filesystem::remove_all("keys");
+		std::filesystem::rename("updated_keys", "keys");
+		
+		std::cout << "\nEncrypted! Send file \"" << user_number << "\" to ALL other parties.\n";
 	}
 	
-	//______________________________________________________Decrypt___________________________________________________//
-	if(user_option == 3)
+	//Decrypt.
+	//WZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMWZMW
+	if(o == "3")
 	{	//Exits if keys not present.
-		in_stream.open("keys"); if(in_stream.fail()) {cout << "\nGet keys first.\n"; return 0;} in_stream.close();
+		if(!std::filesystem::exists("keys")) {std::cout << "\nGet keys first.\n"; return 0;}
 		
-		//Gets path, fixes it if dropped.
-		cout << "\nDrop/enter file:\n"; string path; getline(cin, path); if(path[0] == '\0') {getline(cin, path);}
-		if(path[0] == '\'') {path.erase(0, 1); path.pop_back(); path.pop_back();}
-		in_stream.open(path); if(in_stream.fail()) {cout << "\nNo path " << path << "\n"; return 1;} in_stream.close();
+		//Gets path.
+		std::cout << "\nDrop/enter file:\n";
+		std::string path; std::getline(std::cin, path); if(path[0] == '\'') {path.erase(0, 1); path.pop_back(); path.pop_back();}
+		if(!std::filesystem::exists(path)) {std::cout << "\nNo path " << path << "\n"; return 1;}
 		
-		//Gets file size.
-		long long input_file_size = filesystem::file_size(path);
-		if(input_file_size == 0) {cout << "\nEmpty file.\n"; return 0;}
+		//Checks file size.
+		if(std::filesystem::file_size(path) == 0) {std::cout << "\nEmpty file.\n"; return 0;}
 		
 		//Sees which key to use based on input file name.
-		string key_file_name = "keys/";
-		string user_number = path.substr(path.find_last_of("/\\") + 1);
-		key_file_name += user_number;
+		unsigned long long user_number = std::stoull(path.substr(path.find_last_of("/\\") + 1));
 		
 		//Loads key.
-		char seeds[50001] = {'\0'}; cout << "Decrypting...\n";
-		long long size = filesystem::file_size(key_file_name); if(size != digit_length) {cout << "\nBad key.\n"; return 1;}          //Checks file size.
-		in_stream.open(key_file_name); for(int a = 0; a < digit_length; a++) {in_stream.get(seeds[a]);} in_stream.close();           //Loads value.
-		if(seeds[0] == '0') {seeds[0] = '5';}                                                                                        //Forces its length.
-		mpz_t in, out; mpz_init(in); mpz_init(out); mpz_set_str(in, seeds, 10); mpz_nextprime(out, in); mpz_get_str(seeds, 10, out); //Makes it prime.
-		mpz_t prime, two; mpz_init(prime); mpz_init(two); mpz_set_str(prime, seeds, 10); mpz_set_ui(two, 2);                         //Dedicates.
+		in_stream.open("keys"); if(!in_stream) {std::cout << "\nCan't open file for reading. (Loads key).\n"; return 1;}
+		std::string seed;
+		for(unsigned long long a = 1; std::getline(in_stream, seed); a++)
+		{	if(a == user_number) {break;}
+		}
+		in_stream.close();
 		
-		//Generates randomness.
-		in_stream.open(path);
-		string output_file_name = path; output_file_name += "_(decrypted)";
-		out_stream.open(output_file_name);
-		for(long long gap = 2, a = 0; a < input_file_size;)
-		{	mpz_add(prime, prime, two);
-			int primality = mpz_probab_prime_p(prime, 25);
-			if(primality == false) {gap += 2;}
-			else
-			{	mpz_get_str(seeds, 10, prime);
-				gap *= 10; gap += seeds[digit_length - 3] - 48;
-				gap *= 10; gap += seeds[digit_length - 2] - 48; gap %= 256;
-				
-				//Reads a byte.
-				in_stream.get(file_byte); raw_byte = file_byte; if(raw_byte < 0) {raw_byte += 256;}
-				
-				//Decrypts byte.
-				/*   ______________________________________________ ________________________________________________
-				    |                                              |                                                |
-				    |          if sub-key <= cipherfile            |                     else                       |
-				    |   then plainfile = (cipherfile - sub-key)    |    plainfile = ((256 - sub-key) + cipherfile)  |
-				    |______________________________________________|________________________________________________|
-				*/
-				if(gap <= raw_byte) {raw_byte = (raw_byte - gap);        }
-				else                {raw_byte = ((256 - gap) + raw_byte);}
-				
-				//Writes byte.
-				if(raw_byte < 128) {out_stream.put(raw_byte      );}
-				else               {out_stream.put(raw_byte - 256);}
-				
-				gap = 2; a++; cout << a << " of " << input_file_size << " bytes...\n";
-			}
+		//Generates pseudorandomness. From rolling-code.cpp.
+		std::string output_file_name = (path + "_decrypted");
+		in_stream.open(path);              if( !in_stream) {std::cout << "\nCan't open file for reading. (Generates pseudorandomness).\n"; return 1;}
+		out_stream.open(output_file_name); if(!out_stream) {std::cout << "\nCan't open file for writing. (Generates pseudorandomness).\n"; return 1;}
+		SHA_512_input = seed;
+		for(; in_stream.get(file_byte);)
+		{	{std::string msg = SHA_512_input; unsigned long long H[8] = {0x6a09e667f3bcc908ULL, 0xbb67ae8584caa73bULL, 0x3c6ef372fe94f82bULL, 0xa54ff53a5f1d36f1ULL, 0x510e527fade682d1ULL, 0x9b05688c2b3e6c1fULL, 0x1f83d9abfb41bd6bULL, 0x5be0cd19137e2179ULL}; const unsigned long long K[80] = {0x428a2f98d728ae22ULL, 0x7137449123ef65cdULL, 0xb5c0fbcfec4d3b2fULL, 0xe9b5dba58189dbbcULL, 0x3956c25bf348b538ULL, 0x59f111f1b605d019ULL, 0x923f82a4af194f9bULL, 0xab1c5ed5da6d8118ULL, 0xd807aa98a3030242ULL, 0x12835b0145706fbeULL, 0x243185be4ee4b28cULL, 0x550c7dc3d5ffb4e2ULL, 0x72be5d74f27b896fULL, 0x80deb1fe3b1696b1ULL, 0x9bdc06a725c71235ULL, 0xc19bf174cf692694ULL, 0xe49b69c19ef14ad2ULL, 0xefbe4786384f25e3ULL, 0x0fc19dc68b8cd5b5ULL, 0x240ca1cc77ac9c65ULL, 0x2de92c6f592b0275ULL, 0x4a7484aa6ea6e483ULL, 0x5cb0a9dcbd41fbd4ULL, 0x76f988da831153b5ULL, 0x983e5152ee66dfabULL, 0xa831c66d2db43210ULL, 0xb00327c898fb213fULL, 0xbf597fc7beef0ee4ULL, 0xc6e00bf33da88fc2ULL, 0xd5a79147930aa725ULL, 0x06ca6351e003826fULL, 0x142929670a0e6e70ULL, 0x27b70a8546d22ffcULL, 0x2e1b21385c26c926ULL, 0x4d2c6dfc5ac42aedULL, 0x53380d139d95b3dfULL, 0x650a73548baf63deULL, 0x766a0abb3c77b2a8ULL, 0x81c2c92e47edaee6ULL, 0x92722c851482353bULL, 0xa2bfe8a14cf10364ULL, 0xa81a664bbc423001ULL, 0xc24b8b70d0f89791ULL, 0xc76c51a30654be30ULL, 0xd192e819d6ef5218ULL, 0xd69906245565a910ULL, 0xf40e35855771202aULL, 0x106aa07032bbd1b8ULL, 0x19a4c116b8d2d0c8ULL, 0x1e376c085141ab53ULL, 0x2748774cdf8eeb99ULL, 0x34b0bcb5e19b48a8ULL, 0x391c0cb3c5c95a63ULL, 0x4ed8aa4ae3418acbULL, 0x5b9cca4f7763e373ULL, 0x682e6ff3d6b2b8a3ULL, 0x748f82ee5defb2fcULL, 0x78a5636f43172f60ULL, 0x84c87814a1f0ab72ULL, 0x8cc702081a6439ecULL, 0x90befffa23631e28ULL, 0xa4506cebde82bde9ULL, 0xbef9a3f7b2c67915ULL, 0xc67178f2e372532bULL, 0xca273eceea26619cULL, 0xd186b8c721c0c207ULL, 0xeada7dd6cde0eb1eULL, 0xf57d4f7fee6ed178ULL, 0x06f067aa72176fbaULL, 0x0a637dc5a2c898a6ULL, 0x113f9804bef90daeULL, 0x1b710b35131c471bULL, 0x28db77f523047d84ULL, 0x32caab7b40c72493ULL, 0x3c9ebe0a15c9bebcULL, 0x431d67c49c100d4cULL, 0x4cc5d4becb3e42b6ULL, 0x597f299cfc657e2aULL, 0x5fcb6fab3ad6faecULL, 0x6c44198c4a475817ULL}; unsigned long long orig_len_bits = msg.length() * 8ULL; msg.push_back((char)0x80); for(; (msg.length() % 128) != 112;) {msg.push_back((char)0x00);} msg.append(8, (char)0x00); for(int a = 0; a < 8; a++) {msg.push_back((char)((orig_len_bits >> (56 - a * 8)) & 0xFF));} for(unsigned long long offset = 0; offset < msg.length(); offset += 128) {unsigned long long W[80]; for(int i = 0; i < 16; i++) {unsigned long long p = offset + (i * 8); W[i] = ((unsigned long long)(unsigned char)msg[p + 0] << 56) | ((unsigned long long)(unsigned char)msg[p + 1] << 48) | ((unsigned long long)(unsigned char)msg[p + 2] << 40) | ((unsigned long long)(unsigned char)msg[p + 3] << 32) | ((unsigned long long)(unsigned char)msg[p + 4] << 24) | ((unsigned long long)(unsigned char)msg[p + 5] << 16) | ((unsigned long long)(unsigned char)msg[p + 6] <<  8) | ((unsigned long long)(unsigned char)msg[p + 7]);} for(int i = 16; i < 80; i++) {unsigned long long x0 = W[i - 15]; unsigned long long s0 = ((x0 >> 1) | (x0 << 63)) ^ ((x0 >> 8) | (x0 << 56)) ^ (x0 >> 7); unsigned long long x1 = W[i - 2]; unsigned long long s1 = ((x1 >> 19) | (x1 << 45)) ^ ((x1 >> 61) | (x1 << 3)) ^ (x1 >> 6); W[i] = s1 + W[i - 7] + s0 + W[i - 16];} unsigned long long a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7]; for(int i = 0; i < 80; i++) {unsigned long long bs1 = ((e >> 14) | (e << 50)) ^ ((e >> 18) | (e << 46)) ^ ((e >> 41) | (e << 23)); unsigned long long ch  = (e & f) ^ (~e & g); unsigned long long T1  = h + bs1 + ch + K[i] + W[i]; unsigned long long bs0 = ((a >> 28) | (a << 36)) ^ ((a >> 34) | (a << 30)) ^ ((a >> 39) | (a << 25)); unsigned long long maj = (a & b) ^ (a & c) ^ (b & c); unsigned long long T2  = bs0 + maj; h = g; g = f; f = e; e = d + T1; d = c; c = b; b = a; a = T1 + T2;} H[0] += a; H[1] += b; H[2] += c; H[3] += d; H[4] += e; H[5] += f; H[6] += g; H[7] += h;} SHA_512_output = ""; const char symbols[] = "0123456789abcdef"; for(int a = 0; a < 8; a++) {for(int b = 15; b >= 0; b--) {int nibble = (H[a] >> (b * 4)) & 0xF; SHA_512_output += symbols[nibble];}}}
+			unsigned long long pseudorandom_byte = std::stoull(SHA_512_output.substr(0, 16), 0, 16);
+			pseudorandom_byte %= 256; unsigned long long raw_byte = file_byte & 0xFF;
+			
+			//Decrypts byte.
+			out_stream.put(raw_byte - pseudorandom_byte);
+			
+			SHA_512_input = SHA_512_output;
 		}
 		in_stream.close();
 		out_stream.close();
 		
 		//Updates key file.
-		out_stream.open(key_file_name);
-		for(long long gap = 2, a = 0; a < digit_length;)
-		{	mpz_add(prime, prime, two);
-			int primality = mpz_probab_prime_p(prime, 25);
-			if(primality == false) {gap += 2;}
-			else {mpz_get_str(seeds, 10, prime); out_stream << seeds[digit_length - 2]; gap = 2; a++;}
+		in_stream.open ("keys"        ); if( !in_stream) {std::cout << "\nCan't open file for reading. (Updates key file).\n"; return 1;}
+		out_stream.open("updated_keys"); if(!out_stream) {std::cout << "\nCan't open file for writing. (Updates key file).\n"; return 1;}
+		for(unsigned long long a = 1; std::getline(in_stream, file_line); a++)
+		{	if(a == user_number) {out_stream << SHA_512_output << "\n";}
+			else                 {out_stream << file_line      << "\n";}
 		}
+		in_stream.close();
 		out_stream.close();
 		
-		cout << "\nDecrypted!\n";
+		std::filesystem::remove_all("keys");
+		std::filesystem::rename("updated_keys", "keys");
+		
+		std::cout << "\nDecrypted!\n";
 	}
 }
