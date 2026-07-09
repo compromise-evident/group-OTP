@@ -1,7 +1,6 @@
 ### Run it
 
-```apt install g++ geany libgmp-dev```. Open the .cpp in Geany.<br>
-Append ```-lgmp``` to Geany's compile & build commands. Hit F9 once. F5 to run.
+```apt install g++ geany```. Open the .cpp in Geany. Hit F9 once. F5 to run.
 
 <br>
 
