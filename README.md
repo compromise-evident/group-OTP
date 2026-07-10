@@ -32,8 +32,8 @@ Option: |
                     others decrypt                and others decrypt
 
 
-Send in the order encrypted, and decrypt in the order received! Keys are files
-that contain a rolling-seed, which is used to generate pseudorandom bytes 0-255.
+Send in the order encrypted, and decrypt in the order received! Keys are lines of
+text that are a rolling-seed, which is used to generate pseudorandom bytes 0-255.
 ```
 
 <br>
