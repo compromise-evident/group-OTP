@@ -71,7 +71,7 @@ int main()
 	{	//Exits if keys not present.
 		if(!std::filesystem::exists("keys")) {std::cout << "\nGet keys first.\n"; return 0;}
 		
-		//Creates the user file if not present.
+		//Creates the user_number file if not present.
 		if(!std::filesystem::exists("user_number"))
 		{	std::cout << "\nJust once, enter your user number: "; std::string user_number; std::getline(std::cin, user_number);
 			if(user_number.empty()) {std::cout << "\nNothing entered.\n"; return 0;}
