@@ -119,8 +119,8 @@ int main()
 		unsigned long long pseudorandom_byte = std::stoull(SHA_512_output.substr(0, 16), 0, 16);
 		pseudorandom_byte %= 256; unsigned long long raw_byte = file_byte & 0xFF;
 		
-		if(o == "2") {out_stream.put(raw_byte + pseudorandom_byte);} //Encrypts byte.
-		else         {out_stream.put(raw_byte - pseudorandom_byte);} //Decrypts byte.
+		if(o == "2") {out_stream.put(raw_byte + pseudorandom_byte);} //Encrypts byte.   Ciphertext = (plaintext + key) mod 256.
+		else         {out_stream.put(raw_byte - pseudorandom_byte);} //Decrypts byte.   If key <= ciphertext, then plaintext = ciphertext - key, else plaintext = (256 - key) + ciphertext.
 		
 		SHA_512_input = SHA_512_output;
 	}
