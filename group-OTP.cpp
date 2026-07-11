@@ -149,7 +149,7 @@ int main()
 		//Checks file size.
 		if(std::filesystem::file_size(path) == 0) {std::cout << "\nEmpty file.\n"; return 0;}
 		
-		//Sees which key to use based on input file name.
+		//Sees which key to use based on the name of the file to decrypt.
 		unsigned long long user_number = std::stoull(path.substr(path.find_last_of("/\\") + 1));
 		
 		//Loads key.
