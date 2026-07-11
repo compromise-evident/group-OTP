@@ -88,7 +88,7 @@ int main()
 		//Checks file size.
 		if(std::filesystem::file_size(path) == 0) {std::cout << "\nEmpty file.\n"; return 0;}
 		
-		//Sees which key to use based on the user file.
+		//Sees which key to use based on the user_number file.
 		in_stream.open("user_number"); if(!in_stream) {std::cout << "\nCan't open file for reading. (Sees which key to use).\n"; return 1;}
 		std::getline(in_stream, file_line);
 		unsigned long long user_number = std::stoull(file_line);
