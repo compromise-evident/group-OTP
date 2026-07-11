@@ -31,6 +31,7 @@ int main()
 		
 		//Gets number of users.
 		std::cout << "\nEnter number of users (2 to 10^18): "; std::string n; std::getline(std::cin, n);
+		if(n.empty()) {std::cout << "\nNothing entered.\n"; return 0;}
 		unsigned long long users = std::stoull(n);
 		if((users < 2) || (users > 1000000000000000000)) {std::cout << "\nOut of bounds.\n"; return 0;}
 		
@@ -73,6 +74,7 @@ int main()
 		//Creates the user file if not present.
 		if(!std::filesystem::exists("user_number"))
 		{	std::cout << "\nJust once, enter your user number: "; std::string user_number; std::getline(std::cin, user_number);
+			if(user_number.empty()) {std::cout << "\nNothing entered.\n"; return 0;}
 			out_stream.open("user_number"); if(!out_stream) {std::cout << "\nCan't open file for writing. (Creates the user file).\n"; return 1;}
 			out_stream << user_number;
 			out_stream.close();
