@@ -18,9 +18,7 @@ int main()
 	std::cout << "\n(1) Get keys"
 	          << "\n(2) Encrypt outgoing file"
 	          << "\n(3) Decrypt received file"
-	
 	          << "\n\nOption: ";
-	
 	std::string o; std::getline(std::cin, o); if((o != "1") && (o != "2") && (o != "3")) {std::cout << "\nBad option.\n"; return 0;}
 	
 	//Get keys.
