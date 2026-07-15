@@ -1,4 +1,6 @@
-/*Version 7.0.0                                                                 Run it: "apt install g++ geany". Open the .cpp in Geany. Hit F9 once. F5 to run.
+/*Run it: "apt install g++ geany". Open the .cpp in Geany. Hit F9 once. F5 to run.
+
+Version 7.0.0
 Secure One-time pad for unlimited file encryption between n people.
 No key is rejected upon decryption--giving false plausible output.*/
 
