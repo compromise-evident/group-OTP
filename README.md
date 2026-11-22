@@ -19,17 +19,17 @@ Option: |
 ### How it works
 
 ```text
-      you make 5 keys:     1       2       3       4       5
-   user 2 gets copies:     1       2       3       4       5
-   user 3 gets copies:     1       2       3       4       5
-   user 4 gets copies:     1       2       3       4       5
-   user 5 gets copies:     1       2       3       4       5
+          you make 5 keys:     1       2       3       4       5
+       user 2 gets copies:     1       2       3       4       5
+       user 3 gets copies:     1       2       3       4       5
+       user 4 gets copies:     1       2       3       4       5
+       user 5 gets copies:     1       2       3       4       5
 
 
-                           ^                               ^
-                      with which                      with which
-                   you encrypt, and                user 5 encrypts,
-                    others decrypt                and others decrypt
+                               ^                               ^
+                          with which                      with which
+                       you encrypt, and                user 5 encrypts,
+                        others decrypt                and others decrypt
 
 
 Send in the order encrypted, and decrypt in the order received! Keys are lines of
@@ -41,10 +41,10 @@ text that are a rolling-seed, which is used to generate pseudorandom bytes 0-255
 ### Perfect secrecy proof
 
 ```text
-       key  523872537481693327099241416092                        0 1 2 3 4 5 6 7 8 9
- plaintext  792342222222222000000945053749
-ciphertext  215114759603815327099186469731                    0   0 1 2 3 4 5 6 7 8 9
-            ^                                                 1   1 2 3 4 5 6 7 8 9 0
+             key  523872537481693327099241416092                  0 1 2 3 4 5 6 7 8 9
+       plaintext  792342222222222000000945053749
+      ciphertext  215114759603815327099186469731              0   0 1 2 3 4 5 6 7 8 9
+                  ^                                           1   1 2 3 4 5 6 7 8 9 0
                                                               2   2 3 4 5 6 7 8 9 0 1
                                                               3   3 4 5 6 7 8 9 0 1 2
 (5+7) mod 10 = 2. The full 10-symbol mod table on the         4   4 5 6 7 8 9 0 1 2 3
