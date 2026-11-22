@@ -40,9 +40,21 @@ text that are a rolling-seed, which is used to generate pseudorandom bytes 0-255
 
 ### Perfect secrecy proof
 
-<p align="center">
-  <img src="docs/perfect_secrecy_proof.png">
-</p>
+```text
+       key  523872537481693327099241416092                       0 1 2 3 4 5 6 7 8 9
+ plaintext  792342222222222000000945053749
+ciphertext  215114759603815327099186469731                   0   0 1 2 3 4 5 6 7 8 9
+            ^                                                1   1 2 3 4 5 6 7 8 9 0
+                                                             2   2 3 4 5 6 7 8 9 0 1
+                                                             3   3 4 5 6 7 8 9 0 1 2
+(5+7) mod 10 = 2. The full 10-symbol mod table on the        4   4 5 6 7 8 9 0 1 2 3
+right proves the plaintext could be any of  10 digits        5   5 6 7 8 9 0 1 2 3 4
+(2 appears 10 times  in the table).  No guess-key  is        6   6 7 8 9 0 1 2 3 4 5
+rejected; complete brute-force  cannot  determine the        7   7 8 9 0 1 2 3 4 5 6
+usefulness of any key.  Only the key owners know that        8   8 9 0 1 2 3 4 5 6 7
+7 was intended.  Extend the table  to 255 for  files.        9   9 0 1 2 3 4 5 6 7 8
+
+```
 
 <sup>Original discoverer of the One-time pad (perfect secrecy) is not mentioned as I had independently rediscovered it ~December 2019</sup>
 
